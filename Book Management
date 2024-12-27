@@ -1,0 +1,163 @@
+//index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hospital Management</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Hospital Management System</h1>
+  <div class="container">
+    <form id="patient-form">
+      <input type="text" id="name" placeholder="Patient Name" required>
+      <input type="number" id="age" placeholder="Age" required>
+      <input type="text" id="condition" placeholder="Condition" required>
+      <button type="submit">Add Patient</button>
+    </form>
+    <ul id="patient-list"></ul>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+
+
+//style.css
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+}
+
+.container {
+  max-width: 400px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+form input, form button {
+  margin: 5px 0;
+  padding: 10px;
+  font-size: 16px;
+}
+
+form button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+form button:hover {
+  background-color: #0056b3;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+li {
+  background: #f9f9f9;
+  margin: 5px 0;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+li button {
+  background: red;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+li button:hover {
+  background: darkred;
+}
+
+//js
+// Firebase configuration (replace with your project details)
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+// Initialize Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore.js";
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const patientsCollection = collection(db, "patients");
+
+// DOM Elements
+const patientForm = document.getElementById("patient-form");
+const patientList = document.getElementById("patient-list");
+
+// Add Patient
+patientForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = document.getElementById("name").value;
+  const age = document.getElementById("age").value;
+  const condition = document.getElementById("condition").value;
+
+  try {
+    await addDoc(patientsCollection, { name, age: parseInt(age), condition });
+    alert("Patient added successfully!");
+    patientForm.reset();
+    loadPatients();
+  } catch (error) {
+    console.error("Error adding patient:", error);
+  }
+});
+
+// Load Patients
+async function loadPatients() {
+  patientList.innerHTML = "";
+  const querySnapshot = await getDocs(patientsCollection);
+  querySnapshot.forEach((doc) => {
+    const patient = doc.data();
+    const li = document.createElement("li");
+    li.textContent = `${patient.name}, Age: ${patient.age}, Condition: ${patient.condition}`;
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "Delete";
+    deleteBtn.addEventListener("click", () => deletePatient(doc.id));
+    li.appendChild(deleteBtn);
+    patientList.appendChild(li);
+  });
+}
+
+// Delete Patient
+async function deletePatient(id) {
+  try {
+    await deleteDoc(doc(db, "patients", id));
+    alert("Patient deleted!");
+    loadPatients();
+  } catch (error) {
+    console.error("Error deleting patient:", error);
+  }
+}
+
+// Initial Load
+loadPatients();
